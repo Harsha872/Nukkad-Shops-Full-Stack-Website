@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Device Carousel - Nukkad Shops</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #f5f3ff 0%, #fdf4ff 50%, #fce7f3 100%);
+      background-attachment: fixed;
+      min-height: 100vh;
+      padding: 0;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      right: 100px;
+      width: 100px;
+      height: 100px;
+      background-image: radial-gradient(circle, rgba(167, 139, 250, 0.15) 1px, transparent 1px);
+      background-size: 10px 10px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .main-content {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 100px 40px 40px 40px;
+    }
+
+    .carousel-container {
+      position: relative;
+      width: 100%;
+      max-width: 600px;
+      height: 600px;
+    }
+
+    /* Animated rings */
+    .ring {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .ring-inner {
+      width: 100%;
+      height: 100%;
+      border: 2px solid rgba(168, 85, 247, 0.2);
+      border-radius: 50%;
+    }
+
+    .ring-outer {
+      animation: rotate-clockwise 20s linear infinite;
+    }
+
+    .ring-middle {
+      position: absolute;
+      inset: 32px;
+      animation: rotate-counter 15s linear infinite;
+    }
+
+    .ring-middle .ring-inner {
+      border-color: rgba(59, 130, 246, 0.2);
+    }
+
+    @keyframes rotate-clockwise {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes rotate-counter {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(-360deg); }
+    }
+
+    /* Device carousel */
+    .device-wrapper {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .device-slide {
+      position: absolute;
+      width: 100%;
+      max-width: 450px;
+      transform-style: preserve-3d;
+      transition: opacity 1s ease-in-out, transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .device-slide.entering {
+      opacity: 0;
+      transform: translateX(50px) rotateY(20deg) scale(0.9);
+    }
+
+    .device-slide.active {
+      opacity: 1;
+      transform: translateX(0) rotateY(0) scale(1);
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .device-slide.exiting {
+      opacity: 0;
+      transform: translateX(-50px) rotateY(-20deg) scale(0.9);
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateX(0) rotateY(0) rotateX(0deg); }
+      25% { transform: translateX(0) rotateY(0) rotateX(-5deg); }
+      50% { transform: translateX(0) rotateY(0) rotateX(0deg); }
+      75% { transform: translateX(0) rotateY(0) rotateX(5deg); }
+    }
+
+    /* Glow effect */
+    .glow {
+      position: absolute;
+      inset: 0;
+      border-radius: 1rem;
+      opacity: 0.5;
+      filter: blur(60px);
+      animation: glow-pulse 4s ease-in-out infinite;
+    }
+
+    .glow-purple {
+      background: linear-gradient(to top right, rgb(168, 85, 247), rgb(59, 130, 246));
+    }
+
+    .glow-blue {
+      background: linear-gradient(to top right, rgb(59, 130, 246), rgb(6, 182, 212));
+    }
+
+    @keyframes glow-pulse {
+      0%, 100% { 
+        opacity: 0.4;
+        transform: scale(1);
+      }
+      50% { 
+        opacity: 0.8;
+        transform: scale(1.1);
+      }
+    }
+
+    /* Device image */
+    .device-image-wrapper {
+      position: relative;
+      z-index: 10;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .device-image-wrapper:hover {
+      transform: scale(1.05);
+    }
+
+    .device-image {
+      width: 100%;
+      height: auto;
+      border-radius: 1rem;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Device name badge */
+    .device-name {
+      position: absolute;
+      bottom: -24px;
+      left: 50%;
+      transform: translateX(-50%) scale(0.8);
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 9999px;
+      padding: 8px 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+      z-index: 20;
+      white-space: nowrap;
+      color: white;
+      font-size: 14px;
+      opacity: 0;
+      animation: badge-appear 0.5s ease 0.4s forwards;
+    }
+
+    @keyframes badge-appear {
+      to {
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+      }
+    }
+
+    /* Carousel indicators */
+    .indicators {
+      position: absolute;
+      bottom: -64px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 12px;
+      z-index: 20;
+    }
+
+    .indicator {
+      position: relative;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      padding: 0;
+      transition: transform 0.2s ease;
+    }
+
+    .indicator:hover {
+      transform: scale(1.3);
+    }
+
+    .indicator:active {
+      transform: scale(0.9);
+    }
+
+    .indicator-dot {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: rgb(71, 85, 105);
+      transition: all 0.3s ease;
+    }
+
+    .indicator.active .indicator-dot {
+      background: linear-gradient(to right, rgb(192, 132, 252), rgb(147, 197, 253));
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    .indicator:not(.active) .indicator-dot {
+      transform: scale(0.7);
+      opacity: 0.4;
+    }
+
+    .indicator-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid rgba(192, 132, 252, 0.5);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .indicator.active .indicator-ring {
+      opacity: 1;
+      box-shadow: 0 0 0 2px #0f172a;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      position: absolute;
+      bottom: -48px;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: rgb(30, 41, 59);
+      border-radius: 9999px;
+      overflow: hidden;
+      z-index: 20;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(to right, rgb(168, 85, 247), rgb(59, 130, 246));
+      width: 0%;
+      animation: progress 4s linear;
+    }
+
+    @keyframes progress {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+
+    .progress-bar.reset {
+      animation: none;
+      width: 0%;
+    }
+
+    /* Navigation Bar */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+      padding: 20px 40px;
+      box-shadow: 0 4px 20px rgba(168, 85, 247, 0.1);
+    }
+
+    .nav-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .nav-logo:hover {
+      transform: scale(1.05);
+    }
+
+    .nav-logo-image {
+      height: 40px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-menu {
+      display: flex;
+      gap: 8px;
+      list-style: none;
+    }
+
+    .nav-item {
+      position: relative;
+    }
+
+    .nav-link {
+      display: block;
+      padding: 10px 20px;
+      color: rgba(100, 80, 150, 0.8);
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-link::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, 
+        transparent,
+        rgba(168, 85, 247, 0.2),
+        transparent
+      );
+      transition: left 0.5s ease;
+    }
+
+    .nav-link:hover::before {
+      left: 100%;
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%) scaleX(0);
+      width: 70%;
+      height: 2px;
+      background: linear-gradient(90deg, #a855f7, #3b82f6);
+      border-radius: 2px;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-link:hover {
+      color: #ffffff;
+      background: rgba(168, 85, 247, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .nav-link:hover::after {
+      transform: translateX(-50%) scaleX(1);
+    }
+
+    .nav-link:active {
+      transform: translateY(0);
+    }
+
+    /* Glow effect on hover */
+    .nav-link-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.4), transparent);
+      opacity: 0;
+      transition: all 0.5s ease;
+      pointer-events: none;
+    }
+
+    .nav-link:hover .nav-link-glow {
+      width: 120px;
+      height: 120px;
+      opacity: 1;
+    }
+
+    /* Dropdown menu */
+    .nav-dropdown {
+      position: relative;
+    }
+
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(168, 85, 247, 0.2);
+      border-radius: 8px;
+      padding: 10px 0;
+      min-width: 150px;
+      z-index: 1001;
+      box-shadow: 0 4px 20px rgba(168, 85, 247, 0.1);
+    }
+
+    .nav-dropdown:hover .dropdown-menu {
+      display: block;
+    }
+
+    .dropdown-item {
+      display: block;
+      padding: 10px 20px;
+      color: rgba(100, 80, 150, 0.8);
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .dropdown-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, 
+        transparent,
+        rgba(168, 85, 247, 0.2),
+        transparent
+      );
+      transition: left 0.5s ease;
+    }
+
+    .dropdown-item:hover::before {
+      left: 100%;
+    }
+
+    .dropdown-item::after {
+      content: '';
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%) scaleX(0);
+      width: 70%;
+      height: 2px;
+      background: linear-gradient(90deg, #a855f7, #3b82f6);
+      border-radius: 2px;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .dropdown-item:hover {
+      color: #ffffff;
+      background: rgba(168, 85, 247, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .dropdown-item:hover::after {
+      transform: translateX(-50%) scaleX(1);
+    }
+
+    .dropdown-item:active {
+      transform: translateY(0);
+    }
+
+    /* Glow effect on hover */
+    .dropdown-item-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(168, 85, 247, 0.4), transparent);
+      opacity: 0;
+      transition: all 0.5s ease;
+      pointer-events: none;
+    }
+
+    .dropdown-item:hover .dropdown-item-glow {
+      width: 120px;
+      height: 120px;
+      opacity: 1;
+    }
+
+    .dropdown-arrow {
+      font-size: 10px;
+      margin-left: 5px;
+      transition: transform 0.3s ease;
+    }
+
+    .nav-dropdown:hover .dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    /* CTA Button */
+    .nav-cta {
+      background: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
+      color: white !important;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+    }
+
+    .nav-cta:hover {
+      background: linear-gradient(135deg, #9333ea 0%, #2563eb 100%);
+      box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+      transform: translateY(-3px);
+    }
+
+    .nav-cta::after {
+      display: none;
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .navbar {
+        padding: 12px 20px;
+      }
+
+      .nav-menu {
+        gap: 4px;
+      }
+
+      .nav-link {
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+
+      .nav-logo {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation Bar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-logo">
+        <img src="https://via.placeholder.com/40" alt="Nukkad Shops Logo" class="nav-logo-image">
+        <span>Nukkad Shops</span>
+      </div>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#home" class="nav-link">
+            <span class="nav-link-glow"></span>
+            Home
+          </a>
+        </li>
+        <li class="nav-item nav-dropdown">
+          <a href="#products" class="nav-link">
+            <span class="nav-link-glow"></span>
+            Products
+            <span class="dropdown-arrow">▼</span>
+          </a>
+          <div class="dropdown-menu">
+            <a href="#aspire" class="dropdown-item">Aspire</a>
+            <a href="#pro2" class="dropdown-item">Pro2</a>
+            <a href="#elite-a" class="dropdown-item">Elite-A</a>
+          </div>
+        </li>
+        <li class="nav-item">
+          <a href="#industries" class="nav-link">
+            <span class="nav-link-glow"></span>
+            Industries
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#about" class="nav-link">
+            <span class="nav-link-glow"></span>
+            About
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#partners" class="nav-link">
+            <span class="nav-link-glow"></span>
+            Partners
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#blog" class="nav-link">
+            <span class="nav-link-glow"></span>
+            Blog
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#demo" class="nav-link nav-cta">
+            <span class="nav-link-glow"></span>
+            Book a Demo
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="main-content">
+    <div class="carousel-container">
+      <!-- Animated rings -->
+      <div class="ring ring-outer">
+        <div class="ring-inner"></div>
+      </div>
+      <div class="ring ring-middle">
+        <div class="ring-inner"></div>
+      </div>
+
+      <!-- Device wrapper -->
+      <div class="device-wrapper" id="deviceWrapper">
+        <!-- Devices will be inserted here by JavaScript -->
+      </div>
+
+      <!-- Carousel indicators -->
+      <div class="indicators" id="indicators">
+        <button class="indicator active" data-index="0">
+          <div class="indicator-dot"></div>
+          <div class="indicator-ring"></div>
+        </button>
+        <button class="indicator" data-index="1">
+          <div class="indicator-dot"></div>
+          <div class="indicator-ring"></div>
+        </button>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const devices = [
+      {
+        id: 1,
+        name: 'Nukka Pro Terminal',
+        image: 'https://images.unsplash.com/photo-1556656793-08538906a9f8?w=800&h=800&fit=crop', // Replace with your actual device1 image
+        feature: '⚡ Lightning Fast',
+        glowClass: 'glow-purple'
+      },
+      {
+        id: 2,
+        name: 'Nukka Dino Elite',
+        image: 'https://images.unsplash.com/photo-1580894894513-541e068a3e2b?w=800&h=800&fit=crop', // Replace with your actual device2 image
+        feature: '🔒 Secure Payments',
+        glowClass: 'glow-blue'
+      }
+    ];
+
+    let currentIndex = 0;
+    let intervalId = null;
+    let progressIntervalId = null;
+
+    const deviceWrapper = document.getElementById('deviceWrapper');
+    const progressBar = document.getElementById('progressBar');
+    const indicators = document.querySelectorAll('.indicator');
+
+    function createDeviceSlide(device, isActive = false) {
+      const slide = document.createElement('div');
+      slide.className = `device-slide ${isActive ? 'active' : 'entering'}`;
+      slide.innerHTML = `
+        <div class="glow ${device.glowClass}"></div>
+        <div class="device-image-wrapper">
+          <img src="${device.image}" alt="${device.name}" class="device-image">
+        </div>
+        <div class="device-name">${device.name}</div>
+      `;
+      return slide;
+    }
+
+    function updateIndicators() {
+      indicators.forEach((indicator, index) => {
+        if (index === currentIndex) {
+          indicator.classList.add('active');
+        } else {
+          indicator.classList.remove('active');
+        }
+      });
+    }
+
+    function resetProgress() {
+      progressBar.classList.add('reset');
+      progressBar.style.width = '0%';
+      
+      // Force reflow
+      void progressBar.offsetWidth;
+      
+      progressBar.classList.remove('reset');
+      progressBar.style.animation = 'none';
+      
+      // Force reflow again
+      void progressBar.offsetWidth;
+      
+      progressBar.style.animation = 'progress 4s linear';
+    }
+
+    function showDevice(index, direction = 'next') {
+      // Remove old slide
+      const currentSlide = deviceWrapper.querySelector('.device-slide');
+      if (currentSlide) {
+        currentSlide.classList.add('exiting');
+        setTimeout(() => {
+          if (currentSlide.parentNode) {
+            currentSlide.remove();
+          }
+        }, 1000);
+      }
+
+      // Add new slide
+      const newSlide = createDeviceSlide(devices[index], false);
+      deviceWrapper.appendChild(newSlide);
+
+      // Trigger animation
+      setTimeout(() => {
+        newSlide.classList.remove('entering');
+        newSlide.classList.add('active');
+      }, 50);
+
+      currentIndex = index;
+      updateIndicators();
+      resetProgress();
+    }
+
+    function nextDevice() {
+      const nextIndex = (currentIndex + 1) % devices.length;
+      showDevice(nextIndex, 'next');
+    }
+
+    function goToDevice(index) {
+      if (index !== currentIndex) {
+        clearInterval(intervalId);
+        showDevice(index);
+        startAutoPlay();
+      }
+    }
+
+    function startAutoPlay() {
+      intervalId = setInterval(nextDevice, 4000);
+    }
+
+    // Initialize
+    function init() {
+      // Show first device
+      const firstSlide = createDeviceSlide(devices[0], true);
+      deviceWrapper.appendChild(firstSlide);
+      
+      // Start auto-play
+      startAutoPlay();
+
+      // Reset progress animation
+      resetProgress();
+
+      // Add click handlers to indicators
+      indicators.forEach((indicator) => {
+        indicator.addEventListener('click', () => {
+          const index = parseInt(indicator.getAttribute('data-index'));
+          goToDevice(index);
+        });
+      });
+    }
+
+    // Start the carousel
+    init();
+  </script>
+</body>
+</html>
