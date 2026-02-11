@@ -2,7 +2,7 @@ import { motion, useInView } from "motion/react";
 import { useRef, useState, useEffect } from "react";
 import billingImg from "@/assets/Features/Billing.png";
 import inventoryImg from "@/assets/Features/inventory.png";
-import loyaltyImg from "@/assets/Features/loyalty.png";
+import loyaltyImg from "@/assets/Features/Loyalty.png";
 import offersImg from "@/assets/Features/offers.png";
 import {
   CreditCard,
