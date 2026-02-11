@@ -1,6 +1,6 @@
 import { motion, useInView } from "motion/react";
 import { useRef, useState, useEffect } from "react";
-import billingImg from "@/assets/Features/billing.png";
+import billingImg from "@/assets/Features/Billing.png";
 import inventoryImg from "@/assets/Features/inventory.png";
 import loyaltyImg from "@/assets/Features/loyalty.png";
 import offersImg from "@/assets/Features/offers.png";
